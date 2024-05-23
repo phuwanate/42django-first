@@ -1,0 +1,17 @@
+version: '3.9'
+
+services:
+  django:
+    build:
+      context: ./srcs
+      dockerfile: dockerfile
+      args:
+        MYAPP: ${DJANGO_APP}
+        MYUID: ${MYUID}
+    container_name: django
+    image: django
+    ports:
+      - 80:8000
+    volumes:
+      - ./srcs/app:/usr/src/app/${DJANGO_APP}
+
