@@ -1,6 +1,6 @@
 #!/bin/bash
 
-cd $MYAPP
+# cd $MYAPP
 
 if [[ -f "manage.py" ]];
 then

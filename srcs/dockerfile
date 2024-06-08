@@ -1,6 +1,6 @@
 FROM python:3
 
-ARG MYAPP MYUID
+ARG MYAPP
 
 ENV MYAPP=$MYAPP
 
@@ -10,18 +10,18 @@ RUN pip install -r requirements.txt
 
 RUN chmod +x entrypoint.sh
 
-RUN addgroup --gid $MYUID --system $MYAPP;
+# RUN addgroup --gid $MYUID --system $MYAPP;
 
-RUN adduser --uid $MYUID --system --disabled-password --ingroup $MYAPP \
---no-create-home --home /usr/src/app --shell /bin/bash $MYAPP;
+# RUN adduser --uid $MYUID --system --disabled-password --ingroup $MYAPP \
+# --no-create-home --home /usr/src/app --shell /bin/bash $MYAPP;
 
 WORKDIR /usr/src/app
 
-RUN chown -R $MYAPP:$MYAPP .;
+# RUN chown -R $MYAPP:$MYAPP .;
 
-RUN chown $MYAPP:$MYAPP /entrypoint.sh;
+# RUN chown $MYAPP:$MYAPP /entrypoint.sh;
 
-USER $MYAPP
+# USER $MYAPP
 
 ENTRYPOINT [ "/entrypoint.sh" ]
 
