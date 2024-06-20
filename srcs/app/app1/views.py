@@ -83,4 +83,4 @@ def UserLogout(request):
 def get_csrf_token_and_session_id(request):
     csrf_token = get_token(request)
     session_id = request.session.session_key
-    return JsonResponse({'csrf_token': csrf_token, 'sessionid': session_id})
+    return JsonResponse({'csrf_token': csrf_token, 'sessionid': session_id}, status=200)

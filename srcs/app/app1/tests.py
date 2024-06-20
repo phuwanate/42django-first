@@ -13,39 +13,48 @@ import datetime
 
 def create_user():
     return Users.objects.create(
-        username="pream",
-        avatar="/usr/pream.jpg",
-        rank=1,
-        win=3,
-        lose=2,
-        status="online",
+        username="user1234",
+        avatar="/usr/default.jpg",
+        rank=0,
+        win=0,
+        lose=0,
+        status="offline",
         user_auth_id= None
     )
 
 class UserProfileTest(TestCase):
     def setUp(self):
         self.client = Client()
-        self.profile_url ='/api/users/' 
+        self.profile_url ='/api/users/'
+        self.user = User.objects.create_user(username="user1234", password="password1234")
+        payload = {
+            "username": "user1234", 
+            "password": "password1234"
+        }
+        response = self.client.post(
+            "/api/auth/login", 
+            json.dumps(payload),
+            content_type='application/json')
 
     def test_exist_user_profile(self):
         """
         If user does exist json should be return.
         """
         #Prepare
-        profile_stub = create_user()
         payload = {
 	        "id": 1,
-	        "username": "pream",
-	        "avatar": "/usr/pream.jpg",
-	        "rank": 1,
-	        "win": 3,
-	        "lose": 2,
-	        "status": "online",
-            "user_auth_id": None
+	        "username": "user1234",
+	        "avatar": "/jpg/default.jpg",
+	        "rank": 0,
+	        "win": 0,
+	        "lose": 0,
+	        "status": "offline",
+            "user_auth_id": 1
         }
+
         # true_stub = json.dumps(true_stub, indent=4)
         #Action
-        response = self.client.get(f'{self.profile_url}{profile_stub.id}/profile/')
+        response = self.client.get(f'{self.profile_url}{self.user.id}/profile/')
         # print(response.context)
         #Assert
         self.assertEqual(response.status_code, 200)
@@ -57,13 +66,12 @@ class UserProfileTest(TestCase):
         If user does not exist should be return 404 staus and User not found JSON.
         """
         #Prepare
-        profile_stub = create_user()
         payload = {
 	        'error': 'User not found'
         }
         # true_stub = json.dumps(true_stub, indent=4)
         #Action
-        response = self.client.get(f'{self.profile_url}{profile_stub.id + 1}/profile/')
+        response = self.client.get(f'{self.profile_url}{self.user.id + 1}/profile/')
         # print(response.context)
         #Assert
         self.assertEqual(response.status_code, 404)
@@ -97,7 +105,6 @@ class RegisterTest(TestCase):
             If user already exist should return status 400
             {'error': 'Username already exists'}
         """
-
         User.objects.create_user(username="user1234", password="password1234")
         payload = {
 	        "username" : "user1234",
@@ -199,7 +206,6 @@ class LogoutTest(TestCase):
             json.dumps(self.payload),
             content_type='application/json')
 
-    
     def test_logout_success(self):
         """
             If logout success should return 200
@@ -208,3 +214,64 @@ class LogoutTest(TestCase):
     
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['message'], 'Logout success')
+
+class getCSRFandSession(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.token_url ='/api/get_csrf_token_and_session_id/'
+        self.login_url = '/api/auth/login'
+        self.logout_url ='/api/auth/logout'
+
+        # Create a user
+        self.user = User.objects.create_user(username="user1234", password="password1234")
+        
+        # Login the user to create a session
+        self.payload = {
+            "username": "user1234",
+            "password": "password1234"
+        }
+
+    def test_get_csrf_session_before_login(self):
+        """
+            If has token and session id should return 200
+            session id should be none
+            crsf token should not be none
+        """
+        response = self.client.get(self.token_url)
+        csrf = response.json()['csrf_token']
+        session_id = response.json()['sessionid']
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(session_id, None)
+        self.assertNotEqual(csrf, None)
+
+    def test_get_csrf_session_after_login(self):
+        """
+            If has token and session id should return 200
+            session id should not be none
+            crsf token should not be none
+        """
+        self.client.login(username=self.payload['username'], password=self.payload['password'])
+        response = self.client.get(self.token_url)
+        csrf = response.json()['csrf_token']
+        session_id = response.json()['sessionid']
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertNotEqual(session_id, None)
+        self.assertNotEqual(csrf, None)
+    
+    def test_get_csrf_session_after_logout(self):
+        """
+            If has token and session id should return 200
+            session id should be none
+            crsf token should not be none
+        """
+        self.client.login(username=self.payload['username'], password=self.payload['password'])
+        self.client.post(self.logout_url, content_type='application/json')
+        response = self.client.get(self.token_url)
+        csrf = response.json()['csrf_token']
+        session_id = response.json()['sessionid']
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(session_id, None)
+        self.assertNotEqual(csrf, None)
