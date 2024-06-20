@@ -40,7 +40,6 @@ class UserProfileTest(TestCase):
         """
         If user does exist json should be return.
         """
-        #Prepare
         payload = {
 	        "id": 1,
 	        "username": "user1234",
@@ -48,18 +47,14 @@ class UserProfileTest(TestCase):
 	        "rank": 0,
 	        "win": 0,
 	        "lose": 0,
-	        "status": "offline",
+	        "status": "online",
             "user_auth_id": 1
         }
 
-        # true_stub = json.dumps(true_stub, indent=4)
-        #Action
         response = self.client.get(f'{self.profile_url}{self.user.id}/profile/')
-        # print(response.context)
-        #Assert
+
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), payload)
-        # print(response.json())
     
     def test_not_exist_user_profile(self):
         """
@@ -69,10 +64,8 @@ class UserProfileTest(TestCase):
         payload = {
 	        'error': 'User not found'
         }
-        # true_stub = json.dumps(true_stub, indent=4)
         #Action
         response = self.client.get(f'{self.profile_url}{self.user.id + 1}/profile/')
-        # print(response.context)
         #Assert
         self.assertEqual(response.status_code, 404)
         self.assertEqual(response.json(), payload)
@@ -157,18 +150,24 @@ class LoginTest(TestCase):
         """
             If login success should return 200
         """
-        User.objects.create_user(username="user1234", password="password1234")
+        user = User.objects.create_user(username="user1234", password="password1234")
         payload = {
             "username": "user1234",
             "password": "password1234"
+        }
+        profile_data = {
+            'username': user.username,
+            'profile_id': 1,
         }
         response = self.client.post(
             self.login_url, 
             json.dumps(payload),
             content_type='application/json')
-
+        status = Users.objects.get(user_auth_id=user).status
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['message'], 'Login success')
+        self.assertEqual(response.json()['profile'], profile_data)
+        self.assertEqual(status, "online")
     
     def test_login_fail(self):
         """
@@ -193,10 +192,7 @@ class LogoutTest(TestCase):
         self.logout_url ='/api/auth/logout'
         self.login_url = '/api/auth/login'
 
-        # Create a user
         self.user = User.objects.create_user(username="user1234", password="password1234")
-        
-        # Login the user to create a session
         self.payload = {
             "username": "user1234",
             "password": "password1234"
@@ -211,9 +207,10 @@ class LogoutTest(TestCase):
             If logout success should return 200
         """
         response = self.client.post(self.logout_url, content_type='application/json')
-    
+        status = Users.objects.get(user_auth_id=self.user).status
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['message'], 'Logout success')
+        self.assertEqual(status, 'offline')
 
 class getCSRFandSession(TestCase):
     def setUp(self):
@@ -222,10 +219,7 @@ class getCSRFandSession(TestCase):
         self.login_url = '/api/auth/login'
         self.logout_url ='/api/auth/logout'
 
-        # Create a user
         self.user = User.objects.create_user(username="user1234", password="password1234")
-        
-        # Login the user to create a session
         self.payload = {
             "username": "user1234",
             "password": "password1234"
@@ -234,8 +228,8 @@ class getCSRFandSession(TestCase):
     def test_get_csrf_session_before_login(self):
         """
             If has token and session id should return 200
-            session id should be none
-            crsf token should not be none
+            session_id should be none
+            crsf_token should not be none
         """
         response = self.client.get(self.token_url)
         csrf = response.json()['csrf_token']

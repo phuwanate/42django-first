@@ -66,7 +66,14 @@ def UserLogin(request):
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 login(request, user)
-                return JsonResponse({'message': 'Login success'}, status=200)
+                profile = Users.objects.get(user_auth_id=user)
+                profile.status = 'online'
+                profile.save()
+                profile_data = {
+                    'username': user.username,
+                    'profile_id': profile.id,
+                }
+                return JsonResponse({'message': 'Login success', 'profile': profile_data}, status=200)
             else:
                 return JsonResponse({'error': 'Invalid username or password'}, status=401)
     return JsonResponse({'error': 'Method not allowed'}, status=405)
@@ -74,6 +81,9 @@ def UserLogin(request):
 def UserLogout(request):
     if request.method == 'POST':
         if request.user.is_authenticated:
+            profile = Users.objects.get(user_auth_id=request.user)
+            profile.status = 'offline'
+            profile.save()
             logout(request)
             return JsonResponse({'message': 'Logout success'}, status=200)
         else:
