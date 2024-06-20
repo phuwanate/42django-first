@@ -20,18 +20,20 @@ def delete_user(request, user_id):
         return JsonResponse({'error': 'User not found'}, status=404)
 
 def UserProfile(request, user_id):
-    try:
-        if request.user.is_authenticated:
-            user_obj = Users.objects.get(pk=user_id)
-            user_json = serializers.serialize('json', [user_obj])
-            user_data = json.loads(user_json)[0] #From json to dictionary
-            user_data['fields']['id'] = user_data['pk'] #Add pk to dictionary
+    if request.method == 'GET':
+        try:
+            if request.user.is_authenticated:
+                user_obj = Users.objects.get(pk=user_id)
+                user_json = serializers.serialize('json', [user_obj])
+                user_data = json.loads(user_json)[0] #From json to dictionary
+                user_data['fields']['id'] = user_data['pk'] #Add pk to dictionary
 
-            return JsonResponse(user_data['fields'], safe=False) #select only fields key from meta-data
-        else:
-            return JsonResponse({'message': 'User is not logged in'}, status=401)
-    except Users.DoesNotExist:
-        return JsonResponse({'error': 'User not found'}, status=404)
+                return JsonResponse(user_data['fields'], safe=False) #select only fields key from meta-data
+            else:
+                return JsonResponse({'message': 'User is not logged in'}, status=401)
+        except Users.DoesNotExist:
+            return JsonResponse({'error': 'User not found'}, status=404)
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 def Register(request):
     if request.method == 'POST':
@@ -53,6 +55,7 @@ def Register(request):
             return JsonResponse({'error': 'Invalid JSON format'}, status=400)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'Method not allowed'}, status=405)
         
 def UserLogin(request):
     if request.method == 'POST':
